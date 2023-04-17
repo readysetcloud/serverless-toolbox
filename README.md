@@ -89,7 +89,7 @@ A common task in any application is to hit a 3rd party API. This function will c
       "x-custom-header": "value"
     },
     "body": {
-      "title": "My title":,
+      "title": "My title",
       "body_markdown": "## Hello!"
     }
   },
