@@ -1,0 +1,14 @@
+{
+  "name": "layers",
+  "version": "1.0.0",
+  "description": "Shared code and dependencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "allenheltondev",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.312.0"
+  }
+}

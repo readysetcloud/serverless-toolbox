@@ -1,0 +1,11 @@
+{
+  "name": "set-log-retention",
+  "version": "1.0.0",
+  "description": "Sets all Lambda function log retention period to a configured value. Runs on a daily schedule.",
+  "main": "index.js",
+  "author": "allenheltondev",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "^3.312.0"
+  }
+}

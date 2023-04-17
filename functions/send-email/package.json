@@ -1,0 +1,11 @@
+{
+  "name": "send-email",
+  "version": "1.0.0",
+  "description": "Sends an email via SendGrid",
+  "main": "index.js",
+  "author": "allenheltondev",
+  "license": "ISC",
+  "dependencies": {
+    "@sendgrid/mail": "^7.7.0"
+  }
+}

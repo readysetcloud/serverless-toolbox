@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Serverless Toolbox - Set of functions to help you move faster
+
+Parameters:  
+  SendgridApiKey:
+    Type: String
+    Description: Api Key of the SendGrid account that will send the newsletter
+    NoEcho: true
+    Default: ''   
+  AdminEmail:
+    Type: String
+    Description: Your personal email address or email address to notify
+    Default: ''
+  MomentoApiToken:
+    Type: String
+    Description: API token for Momento Cache
+    NoEcho: true
+    Default: ''
+  OpenAIApiKey:
+    Type: String
+    Description: Auth token for OpenAI
+    NoEcho: true
+    Default: ''
+
+Globals:
+  Function:
+    Runtime: nodejs18.x 
+    Architectures:
+      - arm64
+    Tracing: Active
+    Timeout: 15
+    MemorySize: 1024
+    Handler: index.handler
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+
+Conditions:
+  DeployEmailFunction:
+    !And
+      - !Not [!Equals [!Ref SendgridApiKey, '']]
+      - !Not [!Equals [!Ref AdminEmail, '']]
+  
+  DeployChatGptFunction:
+    !And
+      - !Not [!Equals [!Ref MomentoApiToken, '']]
+      - !Not [!Equals [!Ref OpenAIApiKey, '']]
+
+Resources:
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Metadata:
+      BuildMethod: nodejs18.x
+      BuildArchitecture: arm64
+    Properties:
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - nodejs18.x
+
+  AuthTokensSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      SecretString:
+        Fn::Sub:
+          - |-
+            {            
+              "sendgrid":"${SengridApiKey}",
+              "momento": "${MomentoApiToken}",
+              "openai": "${OpenAIApiKey}"
+            }
+          - SengridApiKey: !Ref SendgridApiKey
+            MomentoApiToken: !Ref MomentoApiToken
+            OpenAIApiKey: !Ref OpenAIApiKey
+
+  SendEmailFunction:
+    Type: AWS::Serverless::Function
+    Condition: DeployEmailFunction
+    Properties:
+      CodeUri: functions/send-email
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AuthTokensSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref AuthTokensSecret
+          FROM_EMAIL: !Ref AdminEmail
+      Events:
+        SendMailEvent:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              detail-type:
+                - Send Email
+
+  SendApiRequestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/send-api-request
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AuthTokensSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref AuthTokensSecret
+
+  SendApiRequestParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /serverless-toolbox/send-api-request
+      Type: String
+      Value: !GetAtt SendApiRequestFunction.Arn
+      Description: Arn for the Send API Request Lambda function
+
+  AskChatGPTFunction:
+    Type: AWS::Serverless::Function
+    Condition: DeployChatGptFunction
+    Properties:
+      CodeUri: functions/ask-chatgpt
+      Timeout: 30
+      MemorySize: 512
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref AuthTokensSecret
+      Environment:
+        Variables:
+          CACHE_TTL: 3600
+          SECRET_ID: !Ref AuthTokensSecret
+
+  AskChatGPTParameter:
+    Type: AWS::SSM::Parameter
+    Condition: DeployChatGptFunction
+    Properties:
+      Name: /serverless-toolbox/ask-chatgpt
+      Type: String
+      Value: !GetAtt AskChatGPTFunction.Arn
+      Description: Arn for the Ask ChatGPT Lambda function
+
+  SetLogRetentionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/set-log-retention/
+      Environment:
+        Variables:
+          RETENTION_DAYS: 7
+      Events:
+        ScheduledEvent:
+          Type: Schedule
+          Properties:            
+            Schedule: "cron(0 2 * * ? *)"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:DescribeLogGroups
+                - logs:PutRetentionPolicy
+              Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*

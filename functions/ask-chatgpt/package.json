@@ -1,0 +1,12 @@
+{
+  "name": "ask-chatgpt",
+  "version": "1.0.0",
+  "description": "Conversational function that allows multiple calls to build a contextual chat with ChatGPT",
+  "main": "index.js",
+  "dependencies": {
+    "@gomomento/sdk": "^1.8.3",
+    "openai": "^3.2.1"
+  },
+  "author": "allenheltondev",
+  "license": "ISC"
+}
