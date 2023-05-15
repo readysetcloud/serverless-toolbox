@@ -23,34 +23,58 @@ exports.handler = async (state) => {
   const newMessage = { role: 'user', content: state.query };
   messages.push(newMessage);
 
-  const result = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    max_tokens: 1500,
-    temperature: .7,
-    messages: messages
-  });
+  try {
+    const result = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      temperature: .7,
+      messages: messages
+    });
 
-  if (state.conversationKey && state.rememberResponse) {
-    await cacheClient.listConcatenateBack('chatgpt', state.conversationKey, [JSON.stringify(newMessage), JSON.stringify(result.data.choices[0].message)]);
-  }
-
-  let response = result.data.choices[0].message.content;
-  if (state.trimResponse) {
-    const pieces = response.split('\n\n');
-
-    if (pieces.length > 2) {
-      const removedText = pieces.slice(1, pieces.length - 2);
-      response = removedText.join('\n\n');
+    if (state.conversationKey && state.rememberResponse) {
+      await cacheClient.listConcatenateBack('chatgpt', state.conversationKey, [JSON.stringify(newMessage), JSON.stringify(result.data.choices[0].message)]);
     }
-  } else if (state.trimFront) {
-    const pieces = response.split('\n\n');
-    if (pieces.length > 2) {
-      const removedText = pieces.slice(1);
-      response = removedText.join('\n\n');
-    }
-  }
 
-  return { response };
+    let response = result.data.choices[0].message.content;
+    if (state.trimResponse) {
+      const pieces = response.split('\n\n');
+
+      if (pieces.length > 2) {
+        const removedText = pieces.slice(1, pieces.length - 2);
+        response = removedText.join('\n\n');
+        if(!response){
+          response = pieces.join('\n\n');
+        }
+      }
+    } else if (state.trimFront) {
+      const pieces = response.split('\n\n');
+      if (pieces.length > 2) {
+        const removedText = pieces.slice(1);
+        response = removedText.join('\n\n');
+      }
+    }
+
+    switch(state.outputFormat?.toLowerCase()){
+      case 'json': 
+        response = JSON.parse(response);
+        break;
+      case 'number':
+        response = Number(response);
+        break;
+      default:
+        response = response.toString();
+        break;
+    }
+
+    return { response };
+  } catch (err) {
+    if (err.response) {
+      console.error({ status: err.response.status, data: err.response.data });
+    } else {
+      console.error(err.message);
+    }
+
+    throw err;
+  }
 }
 
 const setupOpenAI = async () => {
