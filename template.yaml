@@ -130,7 +130,7 @@ Resources:
     Condition: DeployChatGptFunction
     Properties:
       CodeUri: functions/ask-chatgpt
-      Timeout: 30
+      Timeout: 300
       MemorySize: 512
       Policies:
         - AWSLambdaBasicExecutionRole

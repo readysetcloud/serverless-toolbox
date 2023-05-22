@@ -25,7 +25,7 @@ exports.handler = async (state) => {
 
   try {
     const result = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4',
       temperature: .7,
       messages: messages
     });
