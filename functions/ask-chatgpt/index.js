@@ -69,6 +69,16 @@ exports.handler = async (state) => {
   } catch (err) {
     if (err.response) {
       console.error({ status: err.response.status, data: err.response.data });
+      if(err.response.status == 429){
+        function CustomError(message){
+          this.name = 'RateLimitExceeded';
+          this.message = message;
+        }
+  
+        CustomError.prototype = new Error();
+        console.log('Throwing RateLimitExceededError')
+        throw new CustomError(err.message);
+      }
     } else {
       console.error(err.message);
     }
