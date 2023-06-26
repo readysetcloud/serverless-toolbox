@@ -9,6 +9,7 @@
   "author": "allenheltondev",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.312.0"
+    "@aws-sdk/client-secrets-manager": "^3.312.0",
+    "openai": "^3.3.0"
   }
 }

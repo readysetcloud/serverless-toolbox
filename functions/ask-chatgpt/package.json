@@ -4,9 +4,11 @@
   "description": "Conversational function that allows multiple calls to build a contextual chat with ChatGPT",
   "main": "index.js",
   "dependencies": {
-    "@gomomento/sdk": "^1.8.3",
-    "openai": "^3.2.1"
+    "@gomomento/sdk": "^1.25.1"
   },
   "author": "allenheltondev",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "openai": "^3.3.0"
+  }
 }

@@ -32,14 +32,42 @@ You are not required to put in any deployment variables. However, if you choose 
 
 This function will maintain conversations with ChatGPT for you across invocations and execution environments. Conversations are identified by a `conversationKey` property that stores the chat history in a Momento cache.
 
+#### Arguments
+
+| Name            | Description                                         | Required |
+|-----------------|-----------------------------------------------------|----------|
+| query           | Prompt to ask ChatGPT                                | Yes      |
+| conversationKey | Specifies the conversation key for context tracking. | No       |
+| systemContext   | Indicates the perspective you want ChatGPT to answer in     | No       |
+| rememberResponse| Determines if the response should be remembered in the conversation history.     | No       |
+| trim            | Controls whether trailing and leading whitespace is removed.     | No       |
+| trimFront       | Controls whether leading whitespace is removed.      | No       |
+| responseSchema  | Defines the schema for ChatGPT to structure the response. | No       |
+| outputFormat    | Specifies the desired output format of the response (json or string). | No       |
+
 **Example input**
 
 ```json
 {
   "conversationKey": "Example",
-  "systemContext": "You are a staff engineer level Python programmer",
-  "query": "How do I load a file from disk using Python in the most memory efficient way possible?",
-  "rememberResponse": true
+  "systemContext": "You are a travel agent with 30 years experience",
+  "query": "What is the safest place to travel with kids?",
+  "rememberResponse": true,
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "destination": {
+        "type": "string",
+        "description": "Location safest to travel."
+      },
+      "reasoning": {
+        "type": "string",
+        "description": "Reason why the place is the safest."
+      }
+    },
+    "required": [ "destination", "reasoning"]
+  }
 }
 ```
 
@@ -47,7 +75,10 @@ This function will maintain conversations with ChatGPT for you across invocation
 
 ```json
 {
-  "response": "import os from..."
+  "response": {
+    "destination": "Iceland",
+    "reasoning": "Known for its stunning landscapes, Iceland offers a safe environment with low crime rates, clean cities, and a focus on child-friendly activities like exploring geothermal pools, waterfalls, and natural wonders"
+  }
 }
 ```
 

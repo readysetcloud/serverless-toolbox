@@ -25,9 +25,15 @@ exports.handler = async (state) => {
 
   try {
     const result = await openai.createChatCompletion({
-      model: 'gpt-4',
+      model: 'gpt-4-0613',
       temperature: .7,
-      messages: messages
+      messages: messages,
+      ...state.responseSchema && {
+        functions: [{
+          name: 'user-schema',
+          parameters: state.responseSchema
+        }]
+      }
     });
 
     if (state.conversationKey && state.rememberResponse) {
@@ -35,13 +41,19 @@ exports.handler = async (state) => {
     }
 
     let response = result.data.choices[0].message.content;
-    if (state.trimResponse) {
+    if (state.responseSchema) {
+      response = result.data.choices[0].message;
+      response = JSON.parse(response.function_call.arguments);
+      return { response };
+    }
+
+    if (state.trim) {
       const pieces = response.split('\n\n');
 
       if (pieces.length > 2) {
         const removedText = pieces.slice(1, pieces.length - 2);
         response = removedText.join('\n\n');
-        if(!response){
+        if (!response) {
           response = pieces.join('\n\n');
         }
       }
@@ -53,8 +65,8 @@ exports.handler = async (state) => {
       }
     }
 
-    switch(state.outputFormat?.toLowerCase()){
-      case 'json': 
+    switch (state.outputFormat?.toLowerCase()) {
+      case 'json':
         response = JSON.parse(response);
         break;
       case 'number':
@@ -65,16 +77,17 @@ exports.handler = async (state) => {
         break;
     }
 
+
     return { response };
   } catch (err) {
     if (err.response) {
       console.error({ status: err.response.status, data: err.response.data });
-      if(err.response.status == 429){
-        function CustomError(message){
+      if (err.response.status == 429) {
+        function CustomError(message) {
           this.name = 'RateLimitExceeded';
           this.message = message;
         }
-  
+
         CustomError.prototype = new Error();
         console.log('Throwing RateLimitExceededError')
         throw new CustomError(err.message);
