@@ -42,7 +42,7 @@ This function will maintain conversations with ChatGPT for you across invocation
 | rememberResponse| Determines if the response should be remembered in the conversation history.     | No       |
 | trim            | Controls whether trailing and leading whitespace is removed.     | No       |
 | trimFront       | Controls whether leading whitespace is removed.      | No       |
-| responseSchema  | Defines the schema for ChatGPT to structure the response. | No       |
+| schema  | Defines the schema for ChatGPT to structure the response. | No       |
 | outputFormat    | Specifies the desired output format of the response (json or string). | No       |
 
 **Example input**

@@ -28,10 +28,10 @@ exports.handler = async (state) => {
       model: 'gpt-4-0613',
       temperature: .7,
       messages: messages,
-      ...state.responseSchema && {
+      ...state.schema && {
         functions: [{
           name: 'user-schema',
-          parameters: state.responseSchema
+          parameters: state.schema
         }]
       }
     });
@@ -41,7 +41,7 @@ exports.handler = async (state) => {
     }
 
     let response = result.data.choices[0].message.content;
-    if (state.responseSchema) {
+    if (state.schema) {
       response = result.data.choices[0].message;
       response = JSON.parse(response.function_call.arguments);
       return { response };
