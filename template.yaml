@@ -76,6 +76,14 @@ Resources:
             MomentoApiToken: !Ref MomentoApiToken
             OpenAIApiKey: !Ref OpenAIApiKey
 
+  AuthTokenSecretParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /serverless-toolbox/secrets
+      Type: String
+      Value: !Ref AuthTokensSecret
+      Description: Arn for the Secrets Manager Secret for auth tokens
+
   SendEmailFunction:
     Type: AWS::Serverless::Function
     Condition: DeployEmailFunction
