@@ -3,19 +3,19 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Serverless Toolbox - Set of functions to help you move faster
 
-Parameters:  
+Parameters:
   SendgridApiKey:
     Type: String
     Description: Api Key of the SendGrid account that will send the newsletter
     NoEcho: true
-    Default: ''   
+    Default: ''
   AdminEmail:
     Type: String
     Description: Your personal email address or email address to notify
     Default: ''
-  MomentoApiToken:
+  MomentoApiKey:
     Type: String
-    Description: API token for Momento Cache
+    Description: API Key for Momento
     NoEcho: true
     Default: ''
   OpenAIApiKey:
@@ -28,10 +28,34 @@ Parameters:
     Description: API Key for interacting with your Stripe account
     NoEcho: true
     Default: ''
+  MediumApiKey:
+    Type: String
+    Description: API Key for interacting with Medium
+    Default: ''
+  DevApiKey:
+    Type: String
+    Description: API Key for interacting with Dev.to
+    Default: ''
+  HashnodeApiKey:
+    Type: String
+    Description: API Key for interacting with Hashnode
+    Default: ''
+  GitHubPAT:
+    Type: String
+    Description: Personal Access Token for GitHub
+    Default: ''
+  MediumCookie:
+    Type: String
+    Description: Alternate auth for interacting with Medium
+    Default: ''
+  GACreds:
+    Type: String
+    Description: Gooogle Analytics credentials
+    Default: ''
 
 Globals:
   Function:
-    Runtime: nodejs18.x 
+    Runtime: nodejs18.x
     Architectures:
       - arm64
     Tracing: Active
@@ -49,10 +73,10 @@ Conditions:
     !And
       - !Not [!Equals [!Ref SendgridApiKey, '']]
       - !Not [!Equals [!Ref AdminEmail, '']]
-  
+
   DeployChatGptFunction:
     !And
-      - !Not [!Equals [!Ref MomentoApiToken, '']]
+      - !Not [!Equals [!Ref MomentoApiKey, '']]
       - !Not [!Equals [!Ref OpenAIApiKey, '']]
 
 Resources:
@@ -72,14 +96,25 @@ Resources:
       SecretString:
         Fn::Sub:
           - |-
-            {            
-              "sendgrid":"${SengridApiKey}",
-              "momento": "${MomentoApiToken}",
+            {
+              "medium": "${MediumApiKey}",
+              "medium-cookie": "${MediumCookie}",
+              "momento": "${MomentoApiKey}",
+              "dev": "${DevApiKey}",
+              "hashnode": "${HashnodeApiKey}",
+              "github": "${GitHubPAT}",
+              "sendgrid":"${SendgridApiKey}",
+              "ga": "${GoogleAnalyticsCreds}",
               "openai": "${OpenAIApiKey}",
               "stripe": "${StripeApiKey}"
             }
-          - SengridApiKey: !Ref SendgridApiKey
-            MomentoApiToken: !Ref MomentoApiToken
+          - MediumApiKey: !Ref MediumApiKey
+            DevApiKey: !Ref DevApiKey
+            HashnodeApiKey: !Ref HashnodeApiKey
+            GitHubPAT: !Ref GitHubPAT
+            SendgridApiKey: !Ref SendgridApiKey
+            GoogleAnalyticsCreds: !Ref GACreds
+            MomentoApiKey: !Ref MomentoApiKey
             OpenAIApiKey: !Ref OpenAIApiKey
             StripeApiKey: !Ref StripeApiKey
 
@@ -179,7 +214,7 @@ Resources:
       Events:
         ScheduledEvent:
           Type: Schedule
-          Properties:            
+          Properties:
             Schedule: "cron(0 2 * * ? *)"
       Policies:
         - AWSLambdaBasicExecutionRole
