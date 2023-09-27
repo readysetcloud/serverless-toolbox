@@ -13,10 +13,10 @@ exports.handler = async (state) => {
       html = state.detail.html;
       text = state.detail.text;
     }
-    
+
     await sendMessage(to, subject, html, text);
   } catch (err) {
-    console.error(err);
+    console.error(err.response ?? err);
   }
 };
 

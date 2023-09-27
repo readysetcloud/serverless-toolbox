@@ -23,6 +23,11 @@ Parameters:
     Description: Auth token for OpenAI
     NoEcho: true
     Default: ''
+  StripeApiKey:
+    Type: String
+    Description: API Key for interacting with your Stripe account
+    NoEcho: true
+    Default: ''
 
 Globals:
   Function:
@@ -70,11 +75,13 @@ Resources:
             {            
               "sendgrid":"${SengridApiKey}",
               "momento": "${MomentoApiToken}",
-              "openai": "${OpenAIApiKey}"
+              "openai": "${OpenAIApiKey}",
+              "stripe": "${StripeApiKey}"
             }
           - SengridApiKey: !Ref SendgridApiKey
             MomentoApiToken: !Ref MomentoApiToken
             OpenAIApiKey: !Ref OpenAIApiKey
+            StripeApiKey: !Ref StripeApiKey
 
   AuthTokenSecretParameter:
     Type: AWS::SSM::Parameter
