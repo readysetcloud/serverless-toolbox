@@ -1,6 +1,6 @@
 # Serverless Toolbox
 
-If you build serverless projects as a hobby, you might find yourself rebuilding the same utility functions over and over. With serverless, this isn't a problem when it comes to cost, but it does result in some difficulty if you need to make an update to the same function you've implemented 3+ times. 
+If you build serverless projects as a hobby, you might find yourself rebuilding the same utility functions over and over. With serverless, this isn't a problem when it comes to cost, but it does result in some difficulty if you need to make an update to the same function you've implemented 3+ times.
 
 With the serverless toolbox, you update your utility functions in one place... here. The contained functions are triggered either by event bridge events or are consumed via solving the ARN through SSM parameters, so they are loosely coupled with your projects. Make an update once, and all your projects seamlessly incorporate the changes.
 
@@ -199,3 +199,40 @@ None
 **How to Invoke**
 
 Triggered automatically by an EventBridge scheduled invoke every day.
+
+### Marshall/Unmarshall Data
+
+This function is intended to be used in a Step Function workflow. When you do direct integrations with DynamoDB, the data is required to be marshalled for PUTs and is returned in a marshalled format for a GET/QUERY. This function will dynamically convert it to standard format JSON
+
+**Example Input**
+
+```json
+{
+  "marshall": true,
+  "data": {
+    "myValue": "test"
+  }
+}
+```
+
+**Example Output**
+
+```json
+{
+  "data": {
+    "myValue": {
+      "S": { "test" }
+    }
+  }
+}
+```
+
+If you do not provide the `marshall` property or set it to `false`, it will default to an *unmarshall* behavior and unmarshall the value in the `data` property.
+
+**How to Invoke**
+
+You can reference the Arn of this function in an IaC template with the following:
+
+```
+{{resolve:ssm:/serverless-toolbox/marshall-unmarshall-data}}
+```

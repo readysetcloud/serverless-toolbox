@@ -225,3 +225,18 @@ Resources:
                 - logs:DescribeLogGroups
                 - logs:PutRetentionPolicy
               Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+
+  MarshallUnmarshallFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/marshall-unmarshall-data
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  MarshallUnmarshallParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /serverless-toolbox/marshall-unmarshall-data
+      Type: String
+      Value: !GetAtt MarshallUnmarshallFunction.Arn
+      Description: Arn for the Marshall Unmarshall Data Lambda function
