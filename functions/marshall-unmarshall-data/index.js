@@ -5,7 +5,13 @@ exports.handler = async (state) => {
     const data = marshall(state.data);
     return { data };
   } else {
-    const data = unmarshall(state.data);
+    let data;
+    if (state.isDynamoDBQuery) {
+      data = state.data.map(d => unmarshall(d));
+    } else {
+      data = unmarshall(state.data);
+    }
+
     return { data };
   }
 };

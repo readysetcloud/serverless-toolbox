@@ -55,7 +55,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: nodejs18.x
+    Runtime: nodejs20.x
     Architectures:
       - arm64
     Tracing: Active

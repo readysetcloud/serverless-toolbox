@@ -1,9 +1,13 @@
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 const { CacheClient, CredentialProvider, Configurations, CacheListFetch } = require('@gomomento/sdk');
 const shared = require('/opt/nodejs/index');
+const { TopicClient } = require('@gomomento/sdk');
 
 let cacheClient;
+let topicClient;
 let openai;
+
+const JSON_MODE_MODELS = ['gpt-4-1106-preview', 'gpt-4-vision-preview'];
 
 exports.handler = async (state) => {
   let messages = [];
@@ -20,30 +24,48 @@ exports.handler = async (state) => {
     messages.push({ role: 'system', content: state.systemContext });
   }
 
-  const newMessage = { role: 'user', content: state.query };
+  let query = state.query;
+  const model = state.model?.toLowerCase() ?? 'gpt-4-0613';
+  if (JSON_MODE_MODELS.includes(model) && !state.query.toLowerCase().includes('json')) {
+    query += " Structure your answer in JSON format.";
+  }
+
+  const newMessage = { role: 'user', content: query };
   messages.push(newMessage);
 
+
   try {
-    const result = await openai.createChatCompletion({
-      model: 'gpt-4-0613',
+    const params = {
+      model,
       temperature: .7,
-      messages: messages,
+      messages,
       ...state.schema && {
         functions: [{
           name: 'user-schema',
           parameters: state.schema
         }]
+      },
+      ...(state.outputFormat?.toLowerCase() == 'json' &&
+        JSON_MODE_MODELS.includes(model)) && {
+        response_format: { type: 'json_object' },
       }
-    });
+    };
 
-    if (state.conversationKey && state.rememberResponse) {
-      await cacheClient.listConcatenateBack('chatgpt', state.conversationKey, [JSON.stringify(newMessage), JSON.stringify(result.data.choices[0].message)]);
+    let message;
+    if (state.streamResponse) {
+      message = await handleStreamResponse(params, state.conversationKey);
+    } else {
+      message = await handleRequestResponse(params);
     }
 
-    let response = result.data.choices[0].message.content;
+
+    if (state.conversationKey && state.rememberResponse) {
+      await cacheClient.listConcatenateBack('chatgpt', state.conversationKey, [JSON.stringify(newMessage), JSON.stringify(message)]);
+    }
+
+    let response = message.content;
     if (state.schema) {
-      response = result.data.choices[0].message;
-      response = JSON.parse(response.function_call.arguments);
+      response = JSON.parse(message.function_call.arguments);
       return { response };
     }
 
@@ -98,12 +120,33 @@ exports.handler = async (state) => {
 
     throw err;
   }
-}
+};
+
+const handleRequestResponse = async (params) => {
+  const result = await openai.chat.completions.create(params);
+
+  return result.choices[0].message;
+};
+
+const handleStreamResponse = async (params, topicName) => {
+  params.stream = true;
+  const stream = await openai.beta.chat.completions.stream(params);
+
+  for await (const chunk of stream) {
+    const message = chunk.choices[0]?.delta?.content;
+    if (message) {
+      await topicClient.publish('chatgpt', topicName, message);
+    }
+  }
+
+  const completion = await stream.finalChatCompletion();
+  return completion.choices[0].message;
+};
 
 const setupOpenAI = async () => {
   if (!openai) {
     const authToken = await shared.getSecret('openai');
-    openai = new OpenAIApi(new Configuration({ apiKey: authToken }));
+    openai = new OpenAI({ apiKey: authToken });
   }
 };
 
@@ -113,15 +156,18 @@ const initialize = async () => {
 };
 
 const setupCacheClient = async () => {
-  if (!cacheClient) {
-    const authToken = await shared.getSecret('momento');
+  if (!cacheClient || !topicClient) {
+    const apiKey = await shared.getSecret('momento');
 
     cacheClient = new CacheClient({
-      configuration: Configurations.Laptop.latest(),
-      credentialProvider: CredentialProvider.fromString({ authToken }),
+      configuration: Configurations.Lambda.latest(),
+      credentialProvider: CredentialProvider.fromString({ apiKey }),
       defaultTtlSeconds: Number(process.env.CACHE_TTL)
     });
-  }
 
-  return cacheClient;
+    topicClient = new TopicClient({
+      configuration: Configurations.Lambda.latest(),
+      credentialProvider: CredentialProvider.fromString({ apiKey })
+    });
+  }
 };
