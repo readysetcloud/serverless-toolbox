@@ -20,7 +20,8 @@ exports.handler = async (state) => {
     }
   }
 
-  if (state.systemContext) {
+
+  if (state.systemContext && !message.some(m => m.role == 'system')) {
     messages.push({ role: 'system', content: state.systemContext });
   }
 
@@ -65,8 +66,12 @@ exports.handler = async (state) => {
 
     let response = message.content;
     if (state.schema) {
-      response = JSON.parse(message.function_call.arguments);
-      return { response };
+      try {
+        response = JSON.parse(message.function_call.arguments);
+        return { response };
+      } catch (err) {
+        throwCustomError('ResponseFormatError', err.message);
+      }
     }
 
     if (state.trim) {
@@ -105,14 +110,7 @@ exports.handler = async (state) => {
     if (err.response) {
       console.error({ status: err.response.status, data: err.response.data });
       if (err.response.status == 429) {
-        function CustomError(message) {
-          this.name = 'RateLimitExceeded';
-          this.message = message;
-        }
-
-        CustomError.prototype = new Error();
-        console.log('Throwing RateLimitExceededError')
-        throw new CustomError(err.message);
+        throwCustomError('RateLimitExceeded', err.message);
       }
     } else {
       console.error(err.message);
@@ -170,4 +168,15 @@ const setupCacheClient = async () => {
       credentialProvider: CredentialProvider.fromString({ apiKey })
     });
   }
+};
+
+const throwCustomError = (type, message) => {
+  function CustomError(message) {
+    this.name = type;
+    this.message = message;
+  }
+
+  CustomError.prototype = new Error();
+  console.log(`Throwing ${type}`);
+  throw new CustomError(message);
 };
