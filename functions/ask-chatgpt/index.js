@@ -21,7 +21,7 @@ exports.handler = async (state) => {
   }
 
 
-  if (state.systemContext && !message.some(m => m.role == 'system')) {
+  if (state.systemContext && !messages.some(m => m.role == 'system')) {
     messages.push({ role: 'system', content: state.systemContext });
   }
 
